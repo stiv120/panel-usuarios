@@ -1,0 +1,57 @@
+name: panel-usuarios
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 5s
+      start_period: 30s
+
+  db-init:
+    image: mcr.microsoft.com/mssql-tools
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./database:/scripts:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        sleep 10
+        if /opt/mssql-tools/bin/sqlcmd -S db -U sa -P "YourStrong@Passw0rd" -C -d master -i /scripts/01-create-database.sql 2>/dev/null; then
+          echo "Base de datos inicializada"
+        elif /opt/mssql-tools18/bin/sqlcmd -S db -U sa -P "YourStrong@Passw0rd" -C -d master -i /scripts/01-create-database.sql 2>/dev/null; then
+          echo "Base de datos inicializada"
+        else
+          echo "Error: sqlcmd no encontrado" && exit 1
+        fi
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Servicios/Dockerfile
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Database=PruebaSD;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;"
+    ports:
+      - "5000:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+  presentacion:
+    build:
+      context: ./Presentacion
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
