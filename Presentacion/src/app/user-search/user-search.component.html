@@ -1,0 +1,26 @@
+<button type="button" class="search-btn" (click)="onSearch()" [disabled]="loading">
+  {{ loading ? 'Cargando...' : 'Buscar' }}
+</button>
+
+@if (error) {
+  <p class="error">{{ error }}</p>
+}
+
+@if (users.length > 0) {
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Id</th>
+        <th>Nombre</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (user of users; track user.id) {
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ fullName(user) }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
